@@ -13,16 +13,22 @@
 - CRUD (Create, Read, Update e Delete)
 - Validações
 - Paginação e ordenação
+- Boas práticas na API
+- Tratamento de erros
+- Autenticação/Autorização
+- Tokens JWT
 
 ## Tecnologias utilizadas
 
 - Java 17
 - Spring Boot 3
+- Spring Security
 - JPA / Hibernate
 - MySQL / Flyway
 - Maven
 - Lombok
 - Postman
+- JSON Web Token (JWT)
 
 ## Desenvolvimento
 
@@ -37,24 +43,24 @@ Utilizado o padrão ___DTO (Data Transfer Object)___, via Java Records, para rep
 ```java
 public record DadosCadastroMedico(
 
-        @NotBlank
+       @NotBlank(message = "Nome é obrigatório")
         String nome,
 
-        @NotBlank
-        @Email
+        @NotBlank(message = "Email é obrigatório")
+        @Email(message = "Formato do email é inválido")
         String email,
 
-        @NotBlank
+        @NotBlank(message = "Telefone é obrigatório")
         String telefone,
 
-        @NotBlank
+        @NotBlank(message = "CRM é obrigatório")
         @Pattern(regexp = "\\d{4,6}")
         String crm,
 
-        @NotNull
+        @NotNull(message = "Especialidade é obrigatória")
         Especialidade especialidade,
 
-        @NotNull
+        @NotNull(message = "Dados do endereço são obrigatórios")
         @Valid
         DadosEndereco endereco) {
 }
@@ -116,5 +122,100 @@ public class Medico {
 
 Utilizado o Flyway como ferramenta de Migrations no projeto para controle de histórico da evolição do banco de dados 
 
-![image](https://github.com/crlucassilva/voll.med-api/assets/74364754/e467c09d-5c79-4715-9257-4337897bc8e2)
+![image](https://github.com/crlucassilva/voll.med-api/assets/74364754/b90a2bae-e81b-4e07-86d6-559673ed8ba5)
+
+Foi adicionado e configurado o Spring Security e JWT para autenticação e autorização de usuários
+
+```java
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true)
+public class SecurityConfigurations {
+
+    @Autowired
+    private SecurityFilter securityFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http.csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(req -> req
+                    .requestMatchers(HttpMethod.POST, "/login").permitAll()
+                    .requestMatchers(HttpMethod.DELETE, "/medicos/*").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/pacientes/*").hasRole("ADMIN")
+                    .anyRequest().authenticated()
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+```java
+public class AutenticacaoController {
+
+    @Autowired
+    private AuthenticationManager maneger;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @PostMapping
+    public ResponseEntity efetuarLogin(@RequestBody @Valid DadosAutenticacao dados) {
+        var authenticationToken = new UsernamePasswordAuthenticationToken(dados.login(), dados.senha());
+        var authentication = maneger.authenticate(authenticationToken);
+
+        var tokenJWT = tokenService.gerarToken((Usuario) authentication.getPrincipal());
+        return ResponseEntity.ok(new DadosTokenJWT(tokenJWT));
+    }
+}
+```
+
+```java
+@Component
+public class SecurityFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private UsuarioRepository repository;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        var tokenJWT = recuperarToken(request);
+
+        if (tokenJWT != null) {
+            var subject = tokenService.getSubject(tokenJWT);
+            var usuario = repository.findByLogin(subject);
+
+            var authenticarion = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authenticarion);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String recuperarToken(HttpServletRequest request) {
+        var authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader != null) {
+            return authorizationHeader.replace("Bearer ", "");
+        }
+        return null;
+    }
+}
+}
+```
+
+
 
