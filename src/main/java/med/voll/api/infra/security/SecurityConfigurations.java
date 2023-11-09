@@ -29,8 +29,9 @@ public class SecurityConfigurations {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(req -> req
                     .requestMatchers(HttpMethod.POST, "/login").permitAll()
-                    .requestMatchers(HttpMethod.DELETE, "/medicos/*").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/pacientes/*").hasRole("ADMIN")
+                    .requestMatchers( "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                    .requestMatchers(HttpMethod.DELETE, "/medicos/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/pacientes/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
