@@ -222,6 +222,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 }
 ```
 
+Utilizado o Spring Doc para documentar a API
+
+![image](https://github.com/crlucassilva/voll.med-api/assets/74364754/33dd59ae-a2d5-4222-9b24-05363d405d31)
+
 Utilizado o Junit para realizar os testes necessários da aplicação. 
 
 E por fim, o build do projeto.
