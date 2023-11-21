@@ -1,6 +1,6 @@
 # VollMed API
 [![NPM](https://img.shields.io/npm/l/react)](https://github.com/crlucassilva/voll.med-api/blob/main/LICENSE)
-> Status: Em desenvolvimento
+> Status: Finalizado!
 
 # Sobre o Projeto
 
@@ -17,12 +17,17 @@
 - Tratamento de erros
 - Autenticação/Autorização
 - Tokens JWT
+- Regras de Negócio
+- Documentar API
+- Testar API
+- Build do Projeto
 
 ## Tecnologias utilizadas
 
 - Java 17
 - Spring Boot 3
 - Spring Security
+- Spring Doc
 - JPA / Hibernate
 - MySQL / Flyway
 - Maven
@@ -216,6 +221,15 @@ public class SecurityFilter extends OncePerRequestFilter {
 }
 }
 ```
+
+Utilizado o Junit para realizar os testes necessários da aplicação. 
+
+E por fim, o build do projeto.
+
+
+
+
+
 
 
 
